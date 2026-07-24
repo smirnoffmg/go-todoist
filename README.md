@@ -2,7 +2,6 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/smirnoffmg/go-todoist.svg)](https://pkg.go.dev/github.com/smirnoffmg/go-todoist)
 [![CI](https://github.com/smirnoffmg/go-todoist/actions/workflows/ci.yml/badge.svg)](https://github.com/smirnoffmg/go-todoist/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/smirnoffmg/go-todoist)](https://goreportcard.com/report/github.com/smirnoffmg/go-todoist)
 
 A clean, idiomatic Go client for the [Todoist API v1](https://developer.todoist.com/api/v1/) —
 the unified API that merges the former REST and Sync APIs.

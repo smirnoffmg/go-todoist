@@ -86,3 +86,13 @@ func (c *Client) UpdateSection(ctx context.Context, id string, args UpdateSectio
 func (c *Client) DeleteSection(ctx context.Context, id string) error {
 	return doDelete(ctx, c, "/sections/"+id)
 }
+
+// ArchiveSection archives a section.
+func (c *Client) ArchiveSection(ctx context.Context, id string) error {
+	return doAction(ctx, c, "/sections/"+id+"/archive")
+}
+
+// UnarchiveSection restores an archived section.
+func (c *Client) UnarchiveSection(ctx context.Context, id string) error {
+	return doAction(ctx, c, "/sections/"+id+"/unarchive")
+}

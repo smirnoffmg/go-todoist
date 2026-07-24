@@ -213,6 +213,48 @@ func TestIntegrationQuickAdd(t *testing.T) {
 	}
 }
 
+func TestIntegrationTasksByFilter(t *testing.T) {
+	c := integrationClient(t)
+	var count int
+	for task, err := range c.TasksByFilter(context.Background(), &GetTasksByFilterArgs{Query: "today | overdue", Limit: 50}) {
+		if err != nil {
+			t.Fatalf("TasksByFilter: %v", err)
+		}
+		_ = task
+		count++
+	}
+	t.Logf("filter matched %d tasks", count)
+}
+
+func TestIntegrationCompletedByCompletionDate(t *testing.T) {
+	c := integrationClient(t)
+	now := time.Now().UTC()
+	page, err := c.GetCompletedByCompletionDate(context.Background(), &GetCompletedTasksArgs{
+		Since: now.AddDate(0, 0, -7),
+		Until: now,
+		Limit: 50,
+	})
+	if err != nil {
+		t.Fatalf("GetCompletedByCompletionDate: %v", err)
+	}
+	t.Logf("completed in last 7 days: %d (next_cursor=%q)", len(page.Results), page.NextCursor)
+}
+
+func TestIntegrationArchivedProjectsAndSharedLabels(t *testing.T) {
+	c := integrationClient(t)
+	ctx := context.Background()
+
+	ap, err := c.GetArchivedProjects(ctx, &GetProjectsArgs{Limit: 50})
+	if err != nil {
+		t.Fatalf("GetArchivedProjects: %v", err)
+	}
+	sl, err := c.GetSharedLabels(ctx, &GetSharedLabelsArgs{Limit: 50})
+	if err != nil {
+		t.Fatalf("GetSharedLabels: %v", err)
+	}
+	t.Logf("archived projects=%d shared labels=%d", len(ap.Results), len(sl.Results))
+}
+
 func TestIntegrationSyncReadOnly(t *testing.T) {
 	c := integrationClient(t)
 	resp, err := c.Sync(context.Background(), SyncRequest{

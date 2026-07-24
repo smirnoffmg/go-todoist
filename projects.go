@@ -82,9 +82,28 @@ func (c *Client) Projects(ctx context.Context, args *GetProjectsArgs) iter.Seq2[
 	})
 }
 
+// GetArchivedProjects returns a single page of archived projects.
+func (c *Client) GetArchivedProjects(ctx context.Context, args *GetProjectsArgs) (Page[Project], error) {
+	return doList[Project](ctx, c, "/projects/archived", args.query())
+}
+
+// ArchivedProjects returns an iterator over all archived projects, following
+// pagination.
+func (c *Client) ArchivedProjects(ctx context.Context, args *GetProjectsArgs) iter.Seq2[Project, error] {
+	base := args.query()
+	return paginate(func(cursor string) (Page[Project], error) {
+		return doList[Project](ctx, c, "/projects/archived", setCursor(base, cursor))
+	})
+}
+
 // GetProject returns a single project by ID.
 func (c *Client) GetProject(ctx context.Context, id string) (Project, error) {
 	return doGet[Project](ctx, c, "/projects/"+id)
+}
+
+// JoinProject adds the current user to a shared project.
+func (c *Client) JoinProject(ctx context.Context, id string) error {
+	return doAction(ctx, c, "/projects/"+id+"/join")
 }
 
 // CreateProject creates a new project.
