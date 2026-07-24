@@ -13,6 +13,7 @@ package todoist
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -284,6 +285,39 @@ func TestIntegrationWorkspaceInvitations(t *testing.T) {
 		t.Fatalf("GetWorkspaceInvitations: %v", err)
 	}
 	t.Logf("workspace %s has %d pending invitations", ws[0].ID, len(inv))
+}
+
+func TestIntegrationUploadRoundTrip(t *testing.T) {
+	c := integrationClient(t)
+	ctx := context.Background()
+
+	up, err := c.UploadFile(ctx, strings.NewReader("go-todoist upload test\n"), "gotodoist-itest.txt", nil)
+	if err != nil {
+		t.Fatalf("UploadFile: %v", err)
+	}
+	if up.FileURL == "" {
+		t.Fatal("upload returned no file_url")
+	}
+	t.Logf("uploaded %s (%d bytes)", up.FileURL, up.FileSize)
+	if err := c.DeleteUpload(ctx, up.FileURL); err != nil {
+		t.Fatalf("DeleteUpload: %v", err)
+	}
+}
+
+func TestIntegrationSearchProjects(t *testing.T) {
+	c := integrationClient(t)
+	ctx := context.Background()
+	scratchProject(ctx, t, c)
+
+	var count int
+	for p, err := range c.SearchProjectsSeq(ctx, &SearchProjectsArgs{Query: "integration", Limit: 50}) {
+		if err != nil {
+			t.Fatalf("SearchProjectsSeq: %v", err)
+		}
+		_ = p
+		count++
+	}
+	t.Logf("search matched %d projects", count)
 }
 
 func TestIntegrationSyncReadOnly(t *testing.T) {
