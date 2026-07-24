@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -127,6 +128,31 @@ func (c *Client) doForm(ctx context.Context, path string, form url.Values, out a
 	return c.send(req, out)
 }
 
+// doMultipart performs a multipart/form-data POST with one file field plus text
+// fields, and JSON-decodes the response into out.
+func (c *Client) doMultipart(ctx context.Context, path string, fields map[string]string, fileField, fileName string, file io.Reader, out any) error {
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+	// Writes below target an in-memory bytes.Buffer, which never returns a write
+	// error; only the caller-supplied file reader (io.Copy) can fail.
+	for k, v := range fields {
+		_ = mw.WriteField(k, v)
+	}
+	fw, _ := mw.CreateFormFile(fileField, fileName)
+	if _, err := io.Copy(fw, file); err != nil {
+		return err
+	}
+	_ = mw.Close()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, &buf)
+	if err != nil {
+		return err
+	}
+	c.setHeaders(req, false)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	return c.send(req, out)
+}
+
 func (c *Client) setHeaders(req *http.Request, hasJSONBody bool) {
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("User-Agent", c.userAgent)
@@ -158,11 +184,19 @@ func (c *Client) send(req *http.Request, out any) error {
 			return apiErr
 		}
 
-		if out == nil || len(data) == 0 {
-			return nil
-		}
-		return json.Unmarshal(data, out)
+		return decodeResponse(data, out)
 	}
+}
+
+func decodeResponse(data []byte, out any) error {
+	if out == nil || len(data) == 0 {
+		return nil
+	}
+	if raw, ok := out.(*[]byte); ok { // raw (non-JSON) responses, e.g. template files
+		*raw = data
+		return nil
+	}
+	return json.Unmarshal(data, out)
 }
 
 // roundTrip performs one HTTP attempt. A non-2xx response is returned as the

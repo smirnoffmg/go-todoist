@@ -255,6 +255,37 @@ func TestIntegrationArchivedProjectsAndSharedLabels(t *testing.T) {
 	t.Logf("archived projects=%d shared labels=%d", len(ap.Results), len(sl.Results))
 }
 
+func TestIntegrationTemplateURL(t *testing.T) {
+	c := integrationClient(t)
+	ctx := context.Background()
+	project := scratchProject(ctx, t, c)
+
+	res, err := c.GetTemplateURL(ctx, project.ID, false)
+	if err != nil {
+		t.Fatalf("GetTemplateURL: %v", err)
+	}
+	if res.FileURL == "" {
+		t.Error("expected a non-empty template file URL")
+	}
+	t.Logf("template url: %s", res.FileURL)
+}
+
+func TestIntegrationWorkspaceInvitations(t *testing.T) {
+	c := integrationClient(t)
+	ws, err := c.GetWorkspaces(context.Background())
+	if err != nil {
+		t.Fatalf("GetWorkspaces: %v", err)
+	}
+	if len(ws) == 0 {
+		t.Skip("no workspaces on this account")
+	}
+	inv, err := c.GetWorkspaceInvitations(context.Background(), ws[0].ID)
+	if err != nil {
+		t.Fatalf("GetWorkspaceInvitations: %v", err)
+	}
+	t.Logf("workspace %s has %d pending invitations", ws[0].ID, len(inv))
+}
+
 func TestIntegrationSyncReadOnly(t *testing.T) {
 	c := integrationClient(t)
 	resp, err := c.Sync(context.Background(), SyncRequest{
