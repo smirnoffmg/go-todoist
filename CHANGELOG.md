@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- File uploads: `UploadFile` (multipart) and `DeleteUpload`, plus
+  `UploadResult.Attachment()` to attach an upload to a comment.
+- Search endpoints: `SearchProjects`, `SearchSections`, `SearchLabels`
+  (+ `…Seq` iterators).
+- Folders resource: `GetFolders` (+ `Folders` iterator), `GetFolder`,
+  `CreateFolder`, `UpdateFolder`, `DeleteFolder`.
+
 ## [0.2.0] - 2026-07-24
 
 ### Added
