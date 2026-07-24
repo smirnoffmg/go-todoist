@@ -1,0 +1,125 @@
+version: "2"
+
+run:
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    # correctness / bug-catching
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - canonicalheader
+    - containedctx
+    - contextcheck
+    - copyloopvar
+    - durationcheck
+    - errchkjson
+    - errorlint
+    - exhaustive
+    - exptostd
+    - fatcontext
+    - forcetypeassert
+    - gocheckcompilerdirectives
+    - gosec
+    - makezero
+    - musttag
+    - nilerr
+    - nilnesserr
+    - noctx
+    - protogetter
+    - reassign
+    - recvcheck
+    - rowserrcheck
+    - sqlclosecheck
+    - unconvert
+    - unparam
+    - wastedassign
+    - zerologlint
+    # complexity
+    - cyclop
+    - gocognit
+    - gocyclo
+    - nestif
+    # style / idiom
+    - dupword
+    - errname
+    - gocritic
+    - godot
+    - goprintffuncname
+    - importas
+    - intrange
+    - misspell
+    - nakedret
+    - nolintlint
+    - nosprintfhostport
+    - perfsprint
+    - predeclared
+    - revive
+    - usestdlibvars
+    - whitespace
+    # testing
+    - thelper
+    - tparallel
+    - usetesting
+  settings:
+    cyclop:
+      max-complexity: 15
+    gocognit:
+      min-complexity: 20
+    gocyclo:
+      min-complexity: 15
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      settings:
+        hugeParam:
+          # Request-argument structs are passed by value for call-site
+          # ergonomics; these are one-shot API calls, not a hot path.
+          sizeThreshold: 512
+    govet:
+      enable-all: true
+      # fieldalignment reorders struct fields for byte-packing at the cost of
+      # readable/stable field order; shadow is noisy on idiomatic err reuse.
+      disable:
+        - fieldalignment
+        - shadow
+    nakedret:
+      max-func-lines: 0
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+    revive:
+      rules:
+        - name: exported
+          disabled: false
+  exclusions:
+    generated: lax
+    rules:
+      - path: _test\.go
+        linters:
+          - bodyclose
+          - containedctx
+          - contextcheck
+          - cyclop
+          - errcheck
+          - funlen
+          - gocognit
+          - gocyclo
+          - gosec
+          - noctx
+          - unparam
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/smirnoffmg/go-todoist

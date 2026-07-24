@@ -1,0 +1,32 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+/go-todoist
+
+# Test & coverage output
+*.test
+*.out
+coverage.*
+profile.cov
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Dependency vendoring (this module is stdlib-only)
+/vendor/
+
+# Environment / secrets (integration tests read TODOIST_TOKEN)
+.env
+.env.*
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
