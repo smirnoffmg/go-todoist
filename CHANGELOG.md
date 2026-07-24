@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Completed-task endpoints: `GetCompletedByCompletionDate` /
+  `GetCompletedByDueDate` (+ iterators) and `GetTasksByFilter` /`TasksByFilter`
+  (the practical replacement for the absent filters REST).
+- `MoveTask`, `GetArchivedProjects` (+ iterator), `ArchiveSection` /
+  `UnarchiveSection`, and `JoinProject`.
+- Shared labels: `GetSharedLabels` (+ iterator), `RenameSharedLabel`,
+  `RemoveSharedLabel`.
+- `location_reminders` resource (list/get/create/update/delete + iterator).
+- Opt-in retry/backoff on HTTP 429 and 5xx via `WithRetry`, honoring
+  `Retry-After` and respecting context cancellation.
+- OAuth helpers: `RevokeToken` and `MigratePersonalToken`.
+
+### Changed
+- Lowered the minimum Go version in `go.mod` to 1.23 (was 1.26).
+
 ## [0.1.0] - 2026-07-24
 
 Initial release.

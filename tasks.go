@@ -153,3 +153,16 @@ func (c *Client) ReopenTask(ctx context.Context, id string) error {
 func (c *Client) QuickAddTask(ctx context.Context, text string) (Task, error) {
 	return doPost[Task](ctx, c, "/tasks/quick", map[string]string{"text": text})
 }
+
+// MoveTaskArgs specifies where to move a task. Exactly one destination should be
+// set.
+type MoveTaskArgs struct {
+	ProjectID *string `json:"project_id,omitempty"`
+	SectionID *string `json:"section_id,omitempty"`
+	ParentID  *string `json:"parent_id,omitempty"`
+}
+
+// MoveTask moves a task to a different project, section, or parent task.
+func (c *Client) MoveTask(ctx context.Context, id string, args MoveTaskArgs) (Task, error) {
+	return doPost[Task](ctx, c, "/tasks/"+id+"/move", args)
+}

@@ -20,10 +20,12 @@ const defaultUserAgent = "go-todoist"
 // Client is a Todoist API v1 client. It is safe for concurrent use as long as
 // its configuration is not mutated after construction.
 type Client struct {
-	token      string
-	baseURL    string
-	userAgent  string
-	httpClient *http.Client
+	token          string
+	baseURL        string
+	userAgent      string
+	httpClient     *http.Client
+	maxRetries     int
+	retryBaseDelay time.Duration
 }
 
 // Option configures a Client.
@@ -53,6 +55,20 @@ func WithUserAgent(ua string) Option {
 	return func(c *Client) {
 		if ua != "" {
 			c.userAgent = ua
+		}
+	}
+}
+
+// WithRetry enables retrying requests that fail with HTTP 429 or 5xx, up to
+// maxRetries additional attempts. Between attempts the client waits for the
+// Retry-After duration when the server provides one, otherwise an exponential
+// backoff. Retries respect context cancellation. Retrying is disabled by
+// default (maxRetries <= 0).
+func WithRetry(maxRetries int) Option {
+	return func(c *Client) {
+		c.maxRetries = maxRetries
+		if c.retryBaseDelay == 0 {
+			c.retryBaseDelay = 500 * time.Millisecond
 		}
 	}
 }
@@ -121,30 +137,97 @@ func (c *Client) setHeaders(req *http.Request, hasJSONBody bool) {
 }
 
 func (c *Client) send(req *http.Request, out any) error {
+	for attempt := 0; ; attempt++ {
+		if attempt > 0 {
+			if err := resetBody(req); err != nil {
+				return err
+			}
+		}
+
+		data, apiErr, err := c.roundTrip(req)
+		if err != nil {
+			return err
+		}
+		if apiErr != nil {
+			if c.shouldRetry(apiErr.StatusCode, attempt) {
+				if werr := sleepCtx(req.Context(), c.retryDelay(attempt, apiErr.RetryAfter)); werr != nil {
+					return werr
+				}
+				continue
+			}
+			return apiErr
+		}
+
+		if out == nil || len(data) == 0 {
+			return nil
+		}
+		return json.Unmarshal(data, out)
+	}
+}
+
+// roundTrip performs one HTTP attempt. A non-2xx response is returned as the
+// second value (not the error), so the caller can decide whether to retry.
+func (c *Client) roundTrip(req *http.Request) ([]byte, *Error, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
-	defer func() { _ = resp.Body.Close() }()
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
+	data, readErr := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if readErr != nil {
+		return nil, nil, readErr
 	}
-
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &Error{
+		return data, &Error{
 			StatusCode: resp.StatusCode,
 			Status:     resp.Status,
 			Body:       string(data),
 			RetryAfter: parseRetryAfter(resp.Header.Get("Retry-After")),
-		}
+		}, nil
 	}
+	return data, nil, nil
+}
 
-	if out == nil || len(data) == 0 {
+// resetBody restores a request's body from GetBody so it can be replayed on a
+// retry. net/http sets GetBody for the bytes/strings readers this client uses.
+func resetBody(req *http.Request) error {
+	if req.GetBody == nil {
 		return nil
 	}
-	return json.Unmarshal(data, out)
+	body, err := req.GetBody()
+	if err != nil {
+		return err
+	}
+	req.Body = body
+	return nil
+}
+
+func (c *Client) shouldRetry(status, attempt int) bool {
+	if attempt >= c.maxRetries {
+		return false
+	}
+	return status == http.StatusTooManyRequests || status >= 500
+}
+
+func (c *Client) retryDelay(attempt int, retryAfter time.Duration) time.Duration {
+	if retryAfter > 0 {
+		return retryAfter
+	}
+	return c.retryBaseDelay * time.Duration(1<<attempt)
+}
+
+func sleepCtx(ctx context.Context, d time.Duration) error {
+	if d <= 0 {
+		return nil
+	}
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
 }
 
 func parseRetryAfter(v string) time.Duration {

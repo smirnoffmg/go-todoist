@@ -21,6 +21,21 @@ func doList[T any](ctx context.Context, c *Client, path string, q url.Values) (P
 	return page, err
 }
 
+// itemsPage mirrors the paginated shape of the completed-tasks endpoints, which
+// wrap results in an "items" array rather than "results".
+type itemsPage[T any] struct {
+	Items      []T    `json:"items"`
+	NextCursor string `json:"next_cursor"`
+}
+
+// doItemsList fetches an "items"-wrapped page and normalizes it to Page[T] so
+// callers see the same Results/NextCursor surface as every other list endpoint.
+func doItemsList[T any](ctx context.Context, c *Client, path string, q url.Values) (Page[T], error) {
+	var p itemsPage[T]
+	err := c.do(ctx, http.MethodGet, path, q, nil, &p)
+	return Page[T]{Results: p.Items, NextCursor: p.NextCursor}, err
+}
+
 func doGet[T any](ctx context.Context, c *Client, path string) (T, error) {
 	var out T
 	err := c.do(ctx, http.MethodGet, path, nil, nil, &out)
@@ -37,6 +52,12 @@ func doPost[T any](ctx context.Context, c *Client, path string, body any) (T, er
 // reopen, archive).
 func doAction(ctx context.Context, c *Client, path string) error {
 	return c.do(ctx, http.MethodPost, path, nil, nil, nil)
+}
+
+// doActionBody performs a POST with a request body but discards the response
+// body (e.g. shared-label rename/remove).
+func doActionBody(ctx context.Context, c *Client, path string, body any) error {
+	return c.do(ctx, http.MethodPost, path, nil, body, nil)
 }
 
 func doDelete(ctx context.Context, c *Client, path string) error {
