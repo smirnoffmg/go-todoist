@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Opt-in retry/backoff on HTTP 429 and 5xx via `WithRetry`, honoring
   `Retry-After` and respecting context cancellation.
 - OAuth helpers: `RevokeToken` and `MigratePersonalToken`.
+- Templates: `CreateProjectFromFile`, `ImportIntoProjectFromFile`,
+  `ImportIntoProjectFromTemplateID`, `GetTemplateFile`, `GetTemplateURL`.
+- Workspace invitations (`GetWorkspaceInvitations`, `GetAllWorkspaceInvitations`,
+  `DeleteWorkspaceInvitation`, `AcceptWorkspaceInvitation`,
+  `RejectWorkspaceInvitation`), `JoinWorkspace`, and workspace project listings
+  (`GetWorkspaceActiveProjects` / `GetWorkspaceArchivedProjects` + iterators).
 
 ### Changed
 - Lowered the minimum Go version in `go.mod` to 1.23 (was 1.26).

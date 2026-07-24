@@ -48,6 +48,27 @@ func doPost[T any](ctx context.Context, c *Client, path string, body any) (T, er
 	return out, err
 }
 
+func doPut[T any](ctx context.Context, c *Client, path string, body any) (T, error) {
+	var out T
+	err := c.do(ctx, http.MethodPut, path, nil, body, &out)
+	return out, err
+}
+
+// workspaceProjectsPage mirrors the paginated shape of the workspace project
+// listings, which wrap results in a "workspace_projects" array.
+type workspaceProjectsPage struct {
+	WorkspaceProjects []Project `json:"workspace_projects"`
+	NextCursor        string    `json:"next_cursor"`
+}
+
+// doWorkspaceProjectsList fetches a "workspace_projects"-wrapped page and
+// normalizes it to Page[Project].
+func doWorkspaceProjectsList(ctx context.Context, c *Client, path string, q url.Values) (Page[Project], error) {
+	var p workspaceProjectsPage
+	err := c.do(ctx, http.MethodGet, path, q, nil, &p)
+	return Page[Project]{Results: p.WorkspaceProjects, NextCursor: p.NextCursor}, err
+}
+
 // doAction performs a POST with no request or response body (e.g. close,
 // reopen, archive).
 func doAction(ctx context.Context, c *Client, path string) error {
